@@ -1,6 +1,6 @@
 'use client';
 
-import { AreaChart as RechartsAreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AreaChart as RechartsAreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 interface AreaChartProps {
   data: Array<Record<string, any>>;
@@ -12,9 +12,13 @@ interface AreaChartProps {
 }
 
 export function AreaChart({ data, dataKey, xAxisKey = 'timestamp', name, color = '#8884d8', height = 300 }: AreaChartProps) {
+  if (!data || data.length === 0) {
+    return <div style={{ width: '100%', height }}>No data available</div>;
+  }
+
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <RechartsAreaChart data={data}>
+    <div style={{ width: '100%', height, overflow: 'auto' }}>
+      <RechartsAreaChart data={data} width={800} height={height}>
         <defs>
           <linearGradient id={`color${dataKey}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor={color} stopOpacity={0.8}/>
@@ -49,7 +53,7 @@ export function AreaChart({ data, dataKey, xAxisKey = 'timestamp', name, color =
           name={name || dataKey}
         />
       </RechartsAreaChart>
-    </ResponsiveContainer>
+    </div>
   );
 }
 

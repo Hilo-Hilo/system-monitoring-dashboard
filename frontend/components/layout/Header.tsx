@@ -13,11 +13,13 @@ export function Header() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
+    // Check auth status whenever the pathname changes (navigation happens)
     setIsAuthenticated(auth.isAuthenticated());
-  }, []);
+  }, [pathname]);
 
   const handleLogout = () => {
     auth.removeToken();
+    setIsAuthenticated(false);
     router.push('/');
   };
 

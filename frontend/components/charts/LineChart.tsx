@@ -1,6 +1,7 @@
 'use client';
 
-import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { useMemo } from 'react';
 
 interface LineChartProps {
   data: Array<Record<string, any>>;
@@ -11,11 +12,15 @@ interface LineChartProps {
 }
 
 export function LineChart({ data, dataKey, xAxisKey = 'timestamp', lines, height = 300 }: LineChartProps) {
-  const defaultLines = lines || [{ key: dataKey, name: dataKey, color: '#8884d8' }];
+  const defaultLines = useMemo(() => lines || [{ key: dataKey, name: dataKey, color: '#8884d8' }], [lines, dataKey]);
+
+  if (!data || data.length === 0) {
+    return <div style={{ width: '100%', height }}>No data available</div>;
+  }
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <RechartsLineChart data={data}>
+    <div style={{ width: '100%', height }}>
+      <RechartsLineChart data={data} width={800} height={height}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis 
           dataKey={xAxisKey} 
@@ -48,7 +53,7 @@ export function LineChart({ data, dataKey, xAxisKey = 'timestamp', lines, height
           />
         ))}
       </RechartsLineChart>
-    </ResponsiveContainer>
+    </div>
   );
 }
 

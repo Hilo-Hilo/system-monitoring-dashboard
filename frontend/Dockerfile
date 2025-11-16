@@ -2,7 +2,8 @@ FROM node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+# libc6-compat is optional and may not be available on all architectures
+RUN apk add --no-cache libc6-compat || true
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
