@@ -46,13 +46,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      args:
-        # Pass build-time env var for Next.js to bake into the bundle
-        NEXT_PUBLIC_API_URL: ""
     container_name: monitoring_frontend
-    environment:
-      # Also set at runtime (though Next.js mainly uses build-time value)
-      NEXT_PUBLIC_API_URL: ""
     ports:
       - "3000:3000"
     depends_on:

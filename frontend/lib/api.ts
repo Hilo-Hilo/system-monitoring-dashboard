@@ -1,25 +1,11 @@
 import axios from 'axios';
 
-// Determine base URL based on environment
-// In production (empty NEXT_PUBLIC_API_URL), use relative URLs through nginx
-// In development, use absolute URL
-const getBaseURL = () => {
-  // Server-side: use localhost for build-time operations
-  if (typeof window === 'undefined') {
-    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  }
-  
-  // Client-side: use relative URL if NEXT_PUBLIC_API_URL is not set or empty
-  const envUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (!envUrl || envUrl === '') {
-    return '/api/v1';  // Relative URL for production (via nginx)
-  }
-  
-  return `${envUrl}/api/v1`;  // Use provided URL
-};
-
+// ALWAYS use relative URLs in the browser (goes through nginx)
+// Only use absolute URL on server-side for build-time operations
 const apiClient = axios.create({
-  baseURL: getBaseURL(),
+  baseURL: typeof window === 'undefined' 
+    ? 'http://localhost:8000/api/v1'  // Server-side (build time)
+    : '/api/v1',  // Client-side (always use relative URL through nginx)
   headers: {
     'Content-Type': 'application/json',
   },
