@@ -1,18 +1,30 @@
+const isBrowser = typeof window !== 'undefined';
+
 export const auth = {
   setToken: (token: string) => {
-    localStorage.setItem('auth_token', token);
+    if (isBrowser) {
+      localStorage.setItem('auth_token', token);
+    }
   },
   
   getToken: () => {
-    return localStorage.getItem('auth_token');
+    if (isBrowser) {
+      return localStorage.getItem('auth_token');
+    }
+    return null;
   },
   
   removeToken: () => {
-    localStorage.removeItem('auth_token');
+    if (isBrowser) {
+      localStorage.removeItem('auth_token');
+    }
   },
   
   isAuthenticated: () => {
-    return !!localStorage.getItem('auth_token');
+    if (isBrowser) {
+      return !!localStorage.getItem('auth_token');
+    }
+    return false;
   },
 };
 

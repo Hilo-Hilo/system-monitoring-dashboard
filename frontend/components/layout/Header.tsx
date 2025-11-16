@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,11 @@ import { useRouter } from 'next/navigation';
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const isAuthenticated = auth.isAuthenticated();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    setIsAuthenticated(auth.isAuthenticated());
+  }, []);
 
   const handleLogout = () => {
     auth.removeToken();
