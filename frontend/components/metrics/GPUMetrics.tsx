@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GaugeChart } from '@/components/charts/GaugeChart';
 import { LineChart } from '@/components/charts/LineChart';
-import { useMetrics } from '@/hooks/useMetrics';
+import { SystemMetrics } from '@/lib/api';
 import { useEffect, useState } from 'react';
 
 function formatBytes(bytes: number): string {
@@ -17,8 +17,11 @@ function formatBytes(bytes: number): string {
   return `${size.toFixed(2)} ${units[unitIndex]}`;
 }
 
-export function GPUMetrics() {
-  const { metrics } = useMetrics();
+interface GPUMetricsProps {
+  metrics: SystemMetrics | null;
+}
+
+export function GPUMetrics({ metrics }: GPUMetricsProps) {
   const [history, setHistory] = useState<Array<{ timestamp: string; [key: string]: any }>>([]);
 
   useEffect(() => {

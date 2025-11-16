@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GaugeChart } from '@/components/charts/GaugeChart';
 import { AreaChart } from '@/components/charts/AreaChart';
-import { useMetrics } from '@/hooks/useMetrics';
+import { SystemMetrics } from '@/lib/api';
 import { useEffect, useState } from 'react';
 
 function formatBytes(bytes: number): string {
@@ -17,8 +17,11 @@ function formatBytes(bytes: number): string {
   return `${size.toFixed(2)} ${units[unitIndex]}`;
 }
 
-export function DiskMetrics() {
-  const { metrics } = useMetrics();
+interface DiskMetricsProps {
+  metrics: SystemMetrics | null;
+}
+
+export function DiskMetrics({ metrics }: DiskMetricsProps) {
   const [history, setHistory] = useState<Array<{ timestamp: string; percent: number; used: number }>>([]);
 
   useEffect(() => {

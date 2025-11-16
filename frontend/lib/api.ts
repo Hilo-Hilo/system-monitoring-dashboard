@@ -1,11 +1,24 @@
 import axios from 'axios';
 
-// ALWAYS use relative URLs in the browser (goes through nginx)
-// Only use absolute URL on server-side for build-time operations
+const getBrowserBaseUrl = () => {
+  if (typeof window === 'undefined') {
+    return 'http://localhost:8000/api/v1';
+  }
+
+  const { protocol, hostname, port } = window.location;
+
+  // When accessing the Next.js container directly (port 3000),
+  // proxying through nginx is not available, so hit the backend port.
+  if (port === '3000') {
+    return `${protocol}//${hostname}:8000/api/v1`;
+  }
+
+  const normalizedPort = port && port !== '' ? `:${port}` : '';
+  return `${protocol}//${hostname}${normalizedPort}/api/v1`;
+};
+
 const apiClient = axios.create({
-  baseURL: typeof window === 'undefined' 
-    ? 'http://localhost:8000/api/v1'  // Server-side (build time)
-    : '/api/v1',  // Client-side (always use relative URL through nginx)
+  baseURL: getBrowserBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },

@@ -3,11 +3,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GaugeChart } from '@/components/charts/GaugeChart';
 import { LineChart } from '@/components/charts/LineChart';
-import { useMetrics } from '@/hooks/useMetrics';
+import { SystemMetrics } from '@/lib/api';
 import { useEffect, useState } from 'react';
 
-export function CPUMetrics() {
-  const { metrics } = useMetrics();
+interface CPUMetricsProps {
+  metrics: SystemMetrics | null;
+}
+
+export function CPUMetrics({ metrics }: CPUMetricsProps) {
   const [history, setHistory] = useState<Array<{ timestamp: string; percent: number }>>([]);
 
   useEffect(() => {

@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart } from '@/components/charts/LineChart';
-import { useMetrics } from '@/hooks/useMetrics';
+import { SystemMetrics } from '@/lib/api';
 import { useEffect, useState } from 'react';
 
 function formatBytes(bytes: number): string {
@@ -16,8 +16,11 @@ function formatBytes(bytes: number): string {
   return `${size.toFixed(2)} ${units[unitIndex]}`;
 }
 
-export function NetworkMetrics() {
-  const { metrics } = useMetrics();
+interface NetworkMetricsProps {
+  metrics: SystemMetrics | null;
+}
+
+export function NetworkMetrics({ metrics }: NetworkMetricsProps) {
   const [history, setHistory] = useState<Array<{ timestamp: string; bytes_sent: number; bytes_recv: number }>>([]);
   const [prevBytes, setPrevBytes] = useState<{ sent: number; recv: number } | null>(null);
 
