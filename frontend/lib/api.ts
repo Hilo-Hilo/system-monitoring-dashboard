@@ -115,9 +115,9 @@ export const api = {
   },
   
   history: {
-    getMetrics: (startTime: string, endTime: string, metricType?: string, limit?: number) =>
+    getMetrics: (startTime: string, endTime: string, metricType?: string, limit?: number, aggregate?: boolean) =>
       apiClient.get('/history/metrics', {
-        params: { start_time: startTime, end_time: endTime, metric_type: metricType, limit },
+        params: { start_time: startTime, end_time: endTime, metric_type: metricType, limit, aggregate: aggregate !== false },
       }),
     getProcesses: (startTime: string, endTime: string, limit?: number) =>
       apiClient.get('/history/processes', {

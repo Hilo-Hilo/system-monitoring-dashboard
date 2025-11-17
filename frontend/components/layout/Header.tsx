@@ -41,14 +41,24 @@ export function Header() {
                 Dashboard
               </Link>
               {isAuthenticated && (
-                <Link
-                  href="/processes"
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
-                    pathname === '/processes' ? 'text-primary' : 'text-muted-foreground'
-                  }`}
-                >
-                  Processes
-                </Link>
+                <>
+                  <Link
+                    href="/processes"
+                    className={`text-sm font-medium transition-colors hover:text-primary ${
+                      pathname === '/processes' ? 'text-primary' : 'text-muted-foreground'
+                    }`}
+                  >
+                    Processes
+                  </Link>
+                  <Link
+                    href="/history"
+                    className={`text-sm font-medium transition-colors hover:text-primary ${
+                      pathname === '/history' ? 'text-primary' : 'text-muted-foreground'
+                    }`}
+                  >
+                    History
+                  </Link>
+                </>
               )}
             </nav>
           </div>

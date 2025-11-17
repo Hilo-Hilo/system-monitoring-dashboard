@@ -33,11 +33,19 @@ A comprehensive real-time system monitoring dashboard for NVIDIA Spark systems. 
 ### Historical Data (Authentication Required)
 - **Metrics History**: Query historical system metrics by time range
 - **Process History**: View process execution history and lifecycle
+- **History Page**: Interactive charts displaying historical metrics with:
+  - Date range selection (presets: Last Hour, Last 24 Hours, Last Week, Last Month, or custom range)
+  - CPU metrics charts (usage percentage and frequency)
+  - Memory metrics charts (usage percentage and capacity)
+  - Disk metrics charts (usage percentage and capacity)
+  - Network I/O charts (bytes sent/received and packets)
+  - GPU metrics charts (utilization, temperature, memory for each GPU)
 
 ### User Interface
 - **Responsive Design**: Works on desktop and mobile devices
 - **Clean Dashboard**: Text-based metrics display with real-time updates
 - **Process Management UI**: Table view with sorting, search, and filtering
+- **History Page**: Interactive charts for visualizing historical metrics with date range selection
 - **Pause/Resume**: Control auto-refresh for process list
 - **Error Handling**: Graceful error messages and loading states
 
@@ -272,9 +280,19 @@ See `.env.example` for a template with all available options.
 
 ### Viewing Historical Data
 
-1. Log in to access historical endpoints
-2. Use the API endpoints with time range queries
-3. Historical data is automatically collected every 2 seconds
+1. **Login**: Navigate to `/login` and authenticate
+2. **Access History**: Click "History" in the navigation header
+3. **Select Time Range**: 
+   - Use quick presets (Last Hour, Last 24 Hours, Last Week, Last Month)
+   - Or select "Custom Range" to specify exact start and end times
+4. **View Charts**: The page displays interactive charts for:
+   - **CPU Metrics**: CPU usage percentage and frequency over time
+   - **Memory Metrics**: Memory usage percentage and capacity (used/available)
+   - **Disk Metrics**: Disk usage percentage and capacity (used/free)
+   - **Network I/O**: Network traffic (bytes sent/received) and packet counts
+   - **GPU Metrics**: GPU utilization, temperature, and memory usage for each GPU
+5. **Data Collection**: Historical data is automatically collected every 2 seconds and stored in the database
+6. **API Access**: You can also access historical data programmatically via the API endpoints with time range queries
 
 ## Development
 

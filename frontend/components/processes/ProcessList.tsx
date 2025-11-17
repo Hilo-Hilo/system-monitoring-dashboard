@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { InfoIcon } from '@/components/ui/info-icon';
 import { api, ProcessInfo } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
@@ -108,100 +109,115 @@ export function ProcessList() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>
-            Running Processes ({filteredProcesses.length} / {processes.length})
-          </CardTitle>
-          <Button
-            variant={isPaused ? "default" : "outline"}
-            size="sm"
-            onClick={() => setIsPaused(!isPaused)}
-          >
-            {isPaused ? '▶ Resume' : '⏸ Pause'}
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4 mb-4">
-          {/* Search and Filter Bar */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <input
-                type="text"
-                placeholder="Search by name, user, PID, or status..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md"
-              />
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <Card className="lg:col-span-3">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CardTitle>
+                Running Processes ({filteredProcesses.length} / {processes.length})
+              </CardTitle>
+              <InfoIcon content="This table shows all running processes on the system. CPU % represents the percentage of a single CPU core being used by this process (can exceed 100% on multi-core systems if using multiple cores). Memory % shows the percentage of total system RAM used by this process. Status indicates whether the process is actively running or sleeping/waiting. You can search, filter, and manage processes from this interface." />
             </div>
-            <div>
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="px-3 py-2 border rounded-md"
-              >
-                <option value="all">All Processes</option>
-                <option value="high-cpu">High CPU (&gt;1%)</option>
-                <option value="high-memory">High Memory (&gt;1%)</option>
-                <option value="running">Running</option>
-                <option value="sleeping">Sleeping</option>
-              </select>
-            </div>
+            <Button
+              variant={isPaused ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIsPaused(!isPaused)}
+            >
+              {isPaused ? '▶ Resume' : '⏸ Pause'}
+            </Button>
           </div>
-          {isPaused && (
-            <div className="text-sm text-muted-foreground bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
-              ⚠️ Auto-refresh is paused. Click "Resume" to continue updating.
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4 mb-4">
+            {/* Search and Filter Bar */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  placeholder="Search by name, user, PID, or status..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md"
+                />
+              </div>
+              <div>
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="px-3 py-2 border rounded-md"
+                >
+                  <option value="all">All Processes</option>
+                  <option value="high-cpu">High CPU (&gt;1%)</option>
+                  <option value="high-memory">High Memory (&gt;1%)</option>
+                  <option value="running">Running</option>
+                  <option value="sleeping">Sleeping</option>
+                </select>
+              </div>
             </div>
-          )}
-        </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>PID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>CPU %</TableHead>
-                <TableHead>Memory %</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProcesses.length === 0 ? (
+            {isPaused && (
+              <div className="text-sm text-muted-foreground bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
+                ⚠️ Auto-refresh is paused. Click "Resume" to continue updating.
+              </div>
+            )}
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                    No processes found matching your criteria
-                  </TableCell>
+                  <TableHead>PID</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      CPU %
+                      <InfoIcon content="CPU usage percentage for this process. On multi-core systems, this can exceed 100% if the process uses multiple cores. For example, 200% means the process is using 2 CPU cores at 100% each." className="h-3 w-3" />
+                    </div>
+                  </TableHead>
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      Memory %
+                      <InfoIcon content="Memory usage percentage shows how much of the total system RAM this process is using. This is calculated as (process memory / total system memory) × 100%." className="h-3 w-3" />
+                    </div>
+                  </TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ) : (
-                filteredProcesses.slice(0, 100).map((proc) => (
-                  <TableRow key={proc.pid}>
-                    <TableCell>{proc.pid}</TableCell>
-                    <TableCell className="font-medium">{proc.name}</TableCell>
-                    <TableCell>{proc.username}</TableCell>
-                    <TableCell>{proc.cpu_percent.toFixed(2)}%</TableCell>
-                    <TableCell>{proc.memory_percent.toFixed(2)}%</TableCell>
-                    <TableCell>{proc.status}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleKillProcess(proc.pid)}
-                      >
-                        Kill
-                      </Button>
+              </TableHeader>
+              <TableBody>
+                {filteredProcesses.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                      No processes found matching your criteria
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+                ) : (
+                  filteredProcesses.slice(0, 100).map((proc) => (
+                    <TableRow key={proc.pid}>
+                      <TableCell>{proc.pid}</TableCell>
+                      <TableCell className="font-medium">{proc.name}</TableCell>
+                      <TableCell>{proc.username}</TableCell>
+                      <TableCell>{proc.cpu_percent.toFixed(2)}%</TableCell>
+                      <TableCell>{proc.memory_percent.toFixed(2)}%</TableCell>
+                      <TableCell>{proc.status}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleKillProcess(proc.pid)}
+                        >
+                          Kill
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
