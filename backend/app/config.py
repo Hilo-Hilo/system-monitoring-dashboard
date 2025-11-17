@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     
     # API Settings
     API_V1_PREFIX: str = "/api/v1"
-    SECRET_KEY: str = "your-secret-key-change-in-production"
+    SECRET_KEY: str = "change-me-in-production-generate-a-strong-random-key"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     

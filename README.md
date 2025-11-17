@@ -1,6 +1,8 @@
-# System Monitoring Dashboard
+# NVIDIA Spark Monitoring Dashboard
 
-A comprehensive real-time system monitoring dashboard for NVIDIA Spark systems, accessible via Tailscale VPN. This dashboard provides live visualization of system resources including CPU, Memory, Disk, Network, and GPU metrics, along with advanced process management capabilities.
+A comprehensive real-time system monitoring dashboard for NVIDIA Spark systems. This dashboard provides live visualization of system resources including CPU, Memory, Disk, Network, and GPU metrics, along with advanced process management capabilities.
+
+**Fully Generic & Deployable**: This repository contains no hardcoded values and can be deployed to any NVIDIA Spark system. All configuration is done through environment variables with sensible defaults.
 
 ## Features
 
@@ -60,17 +62,18 @@ A comprehensive real-time system monitoring dashboard for NVIDIA Spark systems, 
    sudo systemctl enable docker
    sudo systemctl start docker
    ```
-3. **Tailscale VPN**: 
-   ```bash
-   curl -fsSL https://tailscale.com/install.sh | sh
-   sudo tailscale up
-   ```
-4. **NVIDIA GPU Drivers** (for GPU metrics):
+3. **Network Access**: Ports 80, 3000, 8000, and 5432 should be available
+4. **NVIDIA GPU Drivers** (optional, for GPU metrics):
    ```bash
    # Verify drivers are installed
    nvidia-smi
    ```
-5. **Network Access**: Ports 80, 3000, 8000, and 5432 should be available
+
+**Note**: This dashboard can be accessed via:
+- Local network (http://localhost or http://[server-ip])
+- VPN (Tailscale, WireGuard, etc.)
+- Public IP (with proper security configuration)
+- Any network configuration you prefer
 
 ## Quick Start on New NVIDIA Spark
 
@@ -81,18 +84,35 @@ git clone https://github.com/Hilo-Hilo/nvidia-spark-monitoring.git
 cd nvidia-spark-monitoring
 ```
 
-### 2. Configure Environment Variables (Optional)
+### 2. Configure Environment Variables (Recommended)
 
 Create a `.env` file in the project root for custom configuration:
 
 ```bash
+# Copy the example file
+cp .env.example .env
+
+# Edit with your preferred values
+nano .env
+```
+
+**Important**: At minimum, change the `SECRET_KEY` to a strong random value for production use.
+
+Example `.env` file:
+```bash
+# Database Configuration
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your-secure-password-here
+POSTGRES_DB=monitoring
+
 # Backend Configuration
-SECRET_KEY=your-secret-key-here-change-in-production
+SECRET_KEY=your-strong-random-secret-key-here
+CORS_ORIGINS=["*"]
 METRICS_COLLECTION_INTERVAL=2
 HISTORICAL_DATA_RETENTION_DAYS=30
 ```
 
-Or use the default values (not recommended for production).
+**Note**: All values have sensible defaults and the system will work without a `.env` file, but it's **strongly recommended** to set your own `SECRET_KEY` and database password for production.
 
 ### 3. Start All Services
 
@@ -155,19 +175,27 @@ The `docker-compose.yml` file configures:
 
 All services are configured with `restart: unless-stopped` for 24/7 availability.
 
-### Backend Environment Variables
+### Environment Variables
 
-**Default values** (can be overridden with `.env` file):
+All configuration is done through environment variables with sensible defaults. Create a `.env` file in the project root to override defaults.
 
-- `DATABASE_URL`: `postgresql://postgres:postgres@db:5432/monitoring`
-- `SECRET_KEY`: `change-me-in-production` (⚠️ **Change this in production!**)
-- `CORS_ORIGINS`: `["*"]` (allows all origins - fine for Tailscale network)
-- `METRICS_COLLECTION_INTERVAL`: `2` (seconds between metric collections)
-- `HISTORICAL_DATA_RETENTION_DAYS`: `30` (days to keep historical data)
+**Database Configuration:**
+- `POSTGRES_USER`: Database username (default: `postgres`)
+- `POSTGRES_PASSWORD`: Database password (default: `postgres`) ⚠️ **Change in production!**
+- `POSTGRES_DB`: Database name (default: `monitoring`)
 
-### Frontend Configuration
+**Backend Configuration:**
+- `SECRET_KEY`: JWT secret key (default: `change-me-in-production`) ⚠️ **Must change in production!**
+- `CORS_ORIGINS`: Allowed CORS origins (default: `["*"]` - fine for private networks)
+- `METRICS_COLLECTION_INTERVAL`: Seconds between metric collections (default: `2`)
+- `HISTORICAL_DATA_RETENTION_DAYS`: Days to keep historical data (default: `30`)
 
-The frontend automatically detects the API URL based on the current hostname. No configuration needed when accessing through nginx.
+**Frontend Configuration:**
+- `NEXT_PUBLIC_API_URL`: Backend API URL (auto-detected, usually not needed)
+
+See `.env.example` for a template with all available options.
+
+**Note**: The `.env` file is gitignored and will not be committed. Use `.env.example` as a template.
 
 ## API Endpoints
 
