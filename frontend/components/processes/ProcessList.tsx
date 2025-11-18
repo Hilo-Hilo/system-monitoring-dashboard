@@ -63,6 +63,17 @@ export function ProcessList() {
     }
   };
 
+  const handleSetPriority = async (pid: number, priority: number) => {
+    try {
+      await api.processes.setPriority(pid, priority);
+      // Refresh process list
+      const response = await api.processes.getAll();
+      setProcesses(response.data.processes);
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Failed to set priority');
+    }
+  };
+
   // Filter processes based on search term and filter type
   const filteredProcesses = useMemo(() => {
     let filtered = [...processes];
@@ -201,13 +212,28 @@ export function ProcessList() {
                       <TableCell>{proc.memory_percent.toFixed(2)}%</TableCell>
                       <TableCell>{proc.status}</TableCell>
                       <TableCell>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleKillProcess(proc.pid)}
-                        >
-                          Kill
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <select
+                            className="h-8 w-24 rounded-md border border-input bg-background px-2 py-1 text-xs"
+                            onChange={(e) => handleSetPriority(proc.pid, parseInt(e.target.value))}
+                            value="0" // Default to 0/Normal as we don't know current priority without fetching it
+                          >
+                            <option value="" disabled>Priority</option>
+                            <option value="-10">High</option>
+                            <option value="-5">Above Normal</option>
+                            <option value="0">Normal</option>
+                            <option value="5">Below Normal</option>
+                            <option value="10">Low</option>
+                            <option value="19">Idle</option>
+                          </select>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleKillProcess(proc.pid)}
+                          >
+                            Kill
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

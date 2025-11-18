@@ -99,7 +99,7 @@ def aggregate_metrics(snapshots, time_range_hours):
 
 
 @router.get("/metrics", response_model=HistoricalMetricsResponse)
-async def get_historical_metrics(
+def get_historical_metrics(
     start_time: datetime = Query(...),
     end_time: datetime = Query(...),
     metric_type: str = Query(None),
@@ -177,7 +177,7 @@ async def get_historical_metrics(
 
 
 @router.get("/processes")
-async def get_process_history(
+def get_process_history(
     start_time: datetime = Query(...),
     end_time: datetime = Query(...),
     limit: int = Query(1000, le=10000),

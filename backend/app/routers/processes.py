@@ -9,14 +9,14 @@ router = APIRouter()
 
 
 @router.get("/", response_model=ProcessListResponse)
-async def get_processes(current_user: User = Depends(get_current_active_user)):
+def get_processes(current_user: User = Depends(get_current_active_user)):
     """Get all running processes (requires authentication)."""
     processes = process_manager.get_all_processes()
     return ProcessListResponse(processes=processes, total=len(processes))
 
 
 @router.post("/{pid}/kill")
-async def kill_process(pid: int, current_user: User = Depends(get_current_active_user)):
+def kill_process(pid: int, current_user: User = Depends(get_current_active_user)):
     """Kill a process by PID (requires authentication)."""
     try:
         success = process_manager.kill_process(pid)
@@ -26,7 +26,7 @@ async def kill_process(pid: int, current_user: User = Depends(get_current_active
 
 
 @router.post("/{pid}/priority")
-async def set_priority(
+def set_priority(
     pid: int, 
     priority: int = Query(..., description="Process priority (-20 to 19)"),
     current_user: User = Depends(get_current_active_user)

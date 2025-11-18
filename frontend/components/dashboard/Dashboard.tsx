@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { InfoIcon } from '@/components/ui/info-icon';
+import { SystemInfoCard } from '@/components/dashboard/SystemInfoCard';
 import { useMetrics } from '@/hooks/useMetrics';
 import { preferences, type NetworkUnit } from '@/lib/preferences';
 
@@ -66,6 +67,10 @@ export function Dashboard() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold">System Monitoring Dashboard</h1>
         <p className="text-muted-foreground">Real-time system resource metrics</p>
+      </div>
+
+      <div className="mb-6">
+        <SystemInfoCard />
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

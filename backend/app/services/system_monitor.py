@@ -1,13 +1,17 @@
 """System metrics collection service."""
+import platform
 import psutil
 import json
 import time
 import os
+import logging
 from typing import List, Optional, Dict
 from app.models.metrics import (
-    CPUMetrics, MemoryMetrics, DiskMetrics, NetworkMetrics, GPUMetrics, SystemMetrics
+    CPUMetrics, MemoryMetrics, DiskMetrics, NetworkMetrics, GPUMetrics, SystemMetrics, SystemInfo
 )
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 try:
     import pynvml
@@ -83,7 +87,7 @@ class SystemMonitor:
                         }
         except (IOError, OSError, ValueError) as e:
             # Fallback to psutil if /proc/net/dev is not accessible
-            print(f"Warning: Could not read /proc/net/dev: {e}")
+            logger.warning(f"Warning: Could not read /proc/net/dev: {e}")
             return {}
         return interfaces
     
@@ -155,7 +159,7 @@ class SystemMonitor:
                 total_packets_recv = net_io.packets_recv
         except Exception as e:
             # Fallback to psutil on any error
-            print(f"Warning: Error reading network stats, using psutil: {e}")
+            logger.warning(f"Warning: Error reading network stats, using psutil: {e}")
             net_io = psutil.net_io_counters()
             total_bytes_sent = net_io.bytes_sent
             total_bytes_recv = net_io.bytes_recv
@@ -202,7 +206,7 @@ class SystemMonitor:
                         'packets_sent': net_io.packets_sent,
                     }
             except Exception as e:
-                print(f"Warning: Could not get per-interface stats: {e}")
+                logger.warning(f"Warning: Could not get per-interface stats: {e}")
                 return {}
         
         result = {}
@@ -274,9 +278,25 @@ class SystemMonitor:
                     power_draw=power
                 ))
         except Exception as e:
-            print(f"Error getting GPU metrics: {e}")
+            logger.error(f"Error getting GPU metrics: {e}")
         
         return gpus
+    
+    def get_system_info(self) -> SystemInfo:
+        """Get general system information."""
+        boot_time = datetime.fromtimestamp(psutil.boot_time())
+        uptime = (datetime.now() - boot_time).total_seconds()
+        
+        return SystemInfo(
+            hostname=platform.node(),
+            os=platform.system(),
+            os_release=platform.release(),
+            os_version=platform.version(),
+            machine=platform.machine(),
+            processor=platform.processor(),
+            uptime=uptime,
+            boot_time=boot_time
+        )
     
     def get_all_metrics(self) -> SystemMetrics:
         """Get all system metrics."""

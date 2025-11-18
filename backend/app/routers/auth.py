@@ -20,7 +20,7 @@ class UserRegister(BaseModel):
 
 
 @router.post("/register")
-async def register(user: UserRegister, db: Session = Depends(get_db)):
+def register(user: UserRegister, db: Session = Depends(get_db)):
     """Register a new user."""
     # Check if user exists
     if db.query(User).filter(User.username == user.username).first():
@@ -39,7 +39,7 @@ async def register(user: UserRegister, db: Session = Depends(get_db)):
 
 
 @router.post("/login")
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """Login and get access token."""
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
@@ -57,7 +57,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
 
 
 @router.get("/me")
-async def read_users_me(current_user: User = Depends(get_current_active_user)):
+def read_users_me(current_user: User = Depends(get_current_active_user)):
     """Get current user information."""
     return {"username": current_user.username, "email": current_user.email}
 

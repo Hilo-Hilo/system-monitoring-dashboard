@@ -13,11 +13,30 @@ interface LineChartProps {
   yAxisFormatter?: (value: number) => string;
 }
 
+// Helper to parse date treating naive strings as UTC
+function parseDate(value: string | number): Date {
+  if (typeof value === 'string' && value.includes('T') && !value.endsWith('Z') && !value.includes('+')) {
+    // Check if it might have a negative offset (e.g. -05:00)
+    // Naive ISO string: 2023-01-01T12:00:00.000
+    // Offset ISO string: 2023-01-01T12:00:00.000-05:00
+    // Simple heuristic: if it ends in digits, it's likely naive (or seconds). If it ends in ) or Z, it's not.
+    // Actually, backend returns naive ISO strings for UTC time.
+    // We'll assume anything without explicit Z or + is naive and thus UTC.
+    // Be careful with negative offsets. 
+    // But standard python isoformat for naive doesn't have offset.
+    const hasNegativeOffset = /-\d\d:\d\d$/.test(value);
+    if (!hasNegativeOffset) {
+      return new Date(value + 'Z');
+    }
+  }
+  return new Date(value);
+}
+
 // Format timestamp in specified timezone
 function formatTimestamp(value: string | number, timezone: string = 'UTC'): string {
   if (!value) return String(value);
   
-  const date = new Date(value);
+  const date = parseDate(value);
   if (isNaN(date.getTime())) return String(value);
   
   try {
@@ -40,7 +59,7 @@ function formatTimestamp(value: string | number, timezone: string = 'UTC'): stri
 function formatFullTimestamp(value: string | number, timezone: string = 'UTC'): string {
   if (!value) return String(value);
   
-  const date = new Date(value);
+  const date = parseDate(value);
   if (isNaN(date.getTime())) return String(value);
   
   try {

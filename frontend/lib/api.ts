@@ -79,6 +79,17 @@ export interface SystemMetrics {
   }>;
 }
 
+export interface SystemInfo {
+  hostname: string;
+  os: string;
+  os_release: string;
+  os_version: string;
+  machine: string;
+  processor: string;
+  uptime: number;
+  boot_time: string;
+}
+
 export interface ProcessInfo {
   pid: number;
   name: string;
@@ -93,6 +104,7 @@ export const api = {
   // Public endpoints (no auth required)
   metrics: {
     getCurrent: () => apiClient.get<SystemMetrics>('/metrics/current'),
+    getSystemInfo: () => apiClient.get<SystemInfo>('/metrics/system'),
     getCPU: () => apiClient.get('/metrics/cpu'),
     getMemory: () => apiClient.get('/metrics/memory'),
     getDisk: () => apiClient.get('/metrics/disk'),

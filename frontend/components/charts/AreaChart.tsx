@@ -12,11 +12,23 @@ interface AreaChartProps {
   timezone?: string;
 }
 
+// Helper to parse date treating naive strings as UTC
+function parseDate(value: string | number): Date {
+  if (typeof value === 'string' && value.includes('T') && !value.endsWith('Z') && !value.includes('+')) {
+    // Check for negative offset
+    const hasNegativeOffset = /-\d\d:\d\d$/.test(value);
+    if (!hasNegativeOffset) {
+      return new Date(value + 'Z');
+    }
+  }
+  return new Date(value);
+}
+
 // Format timestamp in specified timezone
 function formatTimestamp(value: string | number, timezone: string = 'UTC'): string {
   if (!value) return String(value);
   
-  const date = new Date(value);
+  const date = parseDate(value);
   if (isNaN(date.getTime())) return String(value);
   
   try {
@@ -39,7 +51,7 @@ function formatTimestamp(value: string | number, timezone: string = 'UTC'): stri
 function formatFullTimestamp(value: string | number, timezone: string = 'UTC'): string {
   if (!value) return String(value);
   
-  const date = new Date(value);
+  const date = parseDate(value);
   if (isNaN(date.getTime())) return String(value);
   
   try {

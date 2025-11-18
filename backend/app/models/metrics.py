@@ -93,3 +93,15 @@ class HistoricalMetricsResponse(BaseModel):
     metrics: List[Dict[str, Any]]
     count: int
 
+
+class SystemInfo(BaseModel):
+    """System information model."""
+    hostname: str
+    os: str
+    os_release: str
+    os_version: str
+    machine: str
+    processor: str
+    uptime: float
+    boot_time: datetime
+

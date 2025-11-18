@@ -5,6 +5,9 @@ from app.database import SessionLocal
 from app.models.database import MetricSnapshot
 from app.services.system_monitor import system_monitor
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class DataCollector:
@@ -43,7 +46,7 @@ class DataCollector:
             finally:
                 db.close()
         except Exception as e:
-            print(f"Error collecting metrics: {e}")
+            logger.error(f"Error collecting metrics: {e}")
     
     def cleanup_old_data(self, retention_days: int = 30):
         """Remove metrics older than retention period."""
@@ -58,7 +61,7 @@ class DataCollector:
             finally:
                 db.close()
         except Exception as e:
-            print(f"Error cleaning up old data: {e}")
+            logger.error(f"Error cleaning up old data: {e}")
 
 
 # Global instance
