@@ -2,7 +2,7 @@
 
 A comprehensive real-time system monitoring dashboard for NVIDIA Spark systems. This dashboard provides live visualization of system resources including CPU, Memory, Disk, Network, and GPU metrics, along with advanced process management capabilities.
 
-**Fully Generic & Deployable**: This repository contains no hardcoded values and can be deployed to any NVIDIA Spark system. All configuration is done through environment variables with sensible defaults.
+**Fully Generic & Deployable**: This repository contains no hardcoded values and can be deployed to any NVIDIA Spark system (or any Linux system with Docker). All configuration is done through environment variables with sensible defaults. The only file that needs path customization is the optional `system-monitoring.service` file for automatic startup.
 
 ## Features
 
@@ -57,6 +57,10 @@ A comprehensive real-time system monitoring dashboard for NVIDIA Spark systems. 
 - **Reverse Proxy**: Nginx for serving frontend and proxying API requests
 - **Deployment**: Docker Compose with auto-restart policies for 24/7 availability
 - **Process Access**: Backend uses host PID namespace to access all system processes
+- **Background Services**: 
+  - Metrics collection runs every 2 seconds (configurable via `METRICS_COLLECTION_INTERVAL`)
+  - Data cleanup runs every 24 hours to remove old historical data
+  - These services run continuously even when no clients are connected
 
 ## Prerequisites
 
@@ -66,10 +70,18 @@ A comprehensive real-time system monitoring dashboard for NVIDIA Spark systems. 
 2. **Docker & Docker Compose**: 
    ```bash
    sudo apt update
-   sudo apt install docker.io docker-compose
+   sudo apt install docker.io docker-compose-plugin
    sudo systemctl enable docker
    sudo systemctl start docker
+   
+   # Verify installation
+   docker --version
+   docker compose version
    ```
+   
+   **Note**: This project uses Docker Compose V2 (plugin). If you have the older standalone `docker-compose` command, you can either:
+   - Install the plugin: `sudo apt install docker-compose-plugin` (recommended)
+   - Or use `docker-compose` (with hyphen) instead of `docker compose` (with space) in all commands
 3. **Network Access**: Ports 80, 3000, 8000, and 5432 should be available
 4. **NVIDIA GPU Drivers** (optional, for GPU metrics):
    ```bash
@@ -85,6 +97,22 @@ A comprehensive real-time system monitoring dashboard for NVIDIA Spark systems. 
 
 ## Quick Start on New NVIDIA Spark
 
+**Complete Setup Checklist:**
+1. ✅ Install Docker and Docker Compose
+2. ✅ Clone the repository
+3. ✅ Create `.env` file in project root (optional but recommended)
+4. ✅ Build and start services
+5. ✅ (Optional) Set up systemd service for auto-start
+6. ✅ Access dashboard and create account
+
+**Important File Locations:**
+- `.env` file: **Project root** (same directory as `docker-compose.yml`)
+- `docker-compose.yml`: **Project root**
+- `system-monitoring.service`: **Project root** (edit before installing)
+- All other files: Follow the repository structure
+
+---
+
 ### 1. Clone the Repository
 
 ```bash
@@ -94,19 +122,32 @@ cd nvidia-spark-monitoring
 
 ### 2. Configure Environment Variables (Recommended)
 
-Create a `.env` file in the project root for custom configuration:
+**Location**: The `.env` file must be created in the **project root directory** (same directory as `docker-compose.yml`).
 
 ```bash
-# Copy the example file
+# Navigate to project root (if not already there)
+cd nvidia-spark-monitoring
+
+# Copy the example file to create your .env file
 cp .env.example .env
 
 # Edit with your preferred values
 nano .env
+# Or use your preferred editor: vim, code, etc.
 ```
 
 **Important**: At minimum, change the `SECRET_KEY` to a strong random value for production use.
 
-Example `.env` file:
+**Generate a secure SECRET_KEY**:
+```bash
+# Option 1: Using openssl
+openssl rand -hex 32
+
+# Option 2: Using Python
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+**Example `.env` file** (located at project root: `nvidia-spark-monitoring/.env`):
 ```bash
 # Database Configuration
 POSTGRES_USER=postgres
@@ -114,26 +155,47 @@ POSTGRES_PASSWORD=your-secure-password-here
 POSTGRES_DB=monitoring
 
 # Backend Configuration
-SECRET_KEY=your-strong-random-secret-key-here
+SECRET_KEY=your-generated-secret-key-here-minimum-32-characters
 CORS_ORIGINS=["*"]
 METRICS_COLLECTION_INTERVAL=2
 HISTORICAL_DATA_RETENTION_DAYS=30
 ```
 
-**Note**: All values have sensible defaults and the system will work without a `.env` file, but it's **strongly recommended** to set your own `SECRET_KEY` and database password for production.
+**Notes**: 
+- The `.env` file is **gitignored** and will not be committed to version control
+- All values have sensible defaults and the system will work without a `.env` file
+- It's **strongly recommended** to set your own `SECRET_KEY` and database password for production
+- If you don't create a `.env` file, the system will use defaults from `docker-compose.yml` and `backend/app/config.py`
+- Docker Compose automatically reads the `.env` file from the project root when you run `docker compose` commands
 
 ### 3. Start All Services
 
+**Important**: Make sure you're in the project root directory (where `docker-compose.yml` is located).
+
 ```bash
+# Verify you're in the right directory
+ls -la | grep docker-compose.yml  # Should show the file
+
 # Build and start all containers
 sudo docker compose up -d --build
 
-# Check service status
+# Check service status (all should show "Up" and "healthy")
 sudo docker compose ps
 
-# View logs if needed
+# View logs if needed (press Ctrl+C to exit)
 sudo docker compose logs -f
+
+# View logs for a specific service
+sudo docker compose logs -f backend
+sudo docker compose logs -f frontend
+sudo docker compose logs -f db
 ```
+
+**Expected Output**: You should see 4 services running:
+- `monitoring_db` (PostgreSQL)
+- `monitoring_backend` (FastAPI)
+- `monitoring_frontend` (Next.js)
+- `monitoring_nginx` (Nginx reverse proxy)
 
 ### 4. Verify Services are Running
 
@@ -148,21 +210,67 @@ curl http://localhost:3000
 curl http://localhost/health
 ```
 
-### 5. Access the Dashboard
+### 5. (Optional) Set Up Automatic Startup on Boot
 
-1. **Get your Tailscale IP**:
+To ensure the monitoring dashboard automatically starts after system reboots:
+
+1. **Edit the systemd service file** with your project path:
    ```bash
+   # Edit the service file
+   nano system-monitoring.service
+   
+   # Replace /path/to/nvidia-spark-monitoring with your actual project path
+   # For example: /home/username/nvidia-spark-monitoring
+   ```
+
+2. **Install and enable the service**:
+   ```bash
+   # Copy service file to systemd directory
+   sudo cp system-monitoring.service /etc/systemd/system/
+   
+   # Reload systemd
+   sudo systemctl daemon-reload
+   
+   # Enable service to start on boot
+   sudo systemctl enable system-monitoring.service
+   
+   # Start the service now (optional)
+   sudo systemctl start system-monitoring.service
+   
+   # Check status
+   sudo systemctl status system-monitoring.service
+   ```
+
+3. **Verify it works**:
+   ```bash
+   # After a reboot, check if services are running
+   sudo docker compose ps
+   ```
+
+**Note**: The systemd service ensures your monitoring dashboard automatically restarts after system reboots, including when you use the "Restart System" button in the dashboard.
+
+### 6. Access the Dashboard
+
+1. **Get your server IP** (choose one method):
+   ```bash
+   # If using Tailscale
    tailscale ip
+   
+   # Or get local network IP
+   hostname -I | awk '{print $1}'
+   
+   # Or use localhost if accessing from the server itself
    ```
 
 2. **Access the dashboard**:
-   - Open your browser and navigate to `http://[your-tailscale-ip]`
-   - Or use `http://localhost` if accessing from the server itself
-   - The dashboard will be accessible from any device on your Tailscale network
+   - Open your browser and navigate to `http://[your-server-ip]` or `http://localhost`
+   - The dashboard will be accessible from any device on your network
+   - For Tailscale users: accessible from any device on your Tailscale network
+   - For local network: accessible from any device on the same network
 
-### 6. Create Your First Account
+### 7. Create Your First Account
 
-1. Navigate to the login page: `http://[tailscale-ip]/login`
+1. Navigate to the login page: `http://[your-server-ip]/login` or `http://localhost/login`
 2. Click "Register here" at the bottom
 3. Fill in:
    - Username
@@ -194,16 +302,26 @@ All configuration is done through environment variables with sensible defaults. 
 
 **Backend Configuration:**
 - `SECRET_KEY`: JWT secret key (default: `change-me-in-production`) ⚠️ **Must change in production!**
+  - Generate with: `openssl rand -hex 32` or `python3 -c "import secrets; print(secrets.token_urlsafe(32))"`
 - `CORS_ORIGINS`: Allowed CORS origins (default: `["*"]` - fine for private networks)
 - `METRICS_COLLECTION_INTERVAL`: Seconds between metric collections (default: `2`)
+  - Lower values = more granular data but higher resource usage
+  - Higher values = less resource usage but less detailed historical data
+  - Background collection runs continuously even without client connections
 - `HISTORICAL_DATA_RETENTION_DAYS`: Days to keep historical data (default: `30`)
+  - Old data is automatically cleaned up daily
 
 **Frontend Configuration:**
 - `NEXT_PUBLIC_API_URL`: Backend API URL (auto-detected, usually not needed)
 
-See `.env.example` for a template with all available options.
+**Creating `.env` file**:
+- **Location**: Must be in the **project root directory** (same level as `docker-compose.yml`)
+- **Method 1**: Copy from `.env.example`: `cp .env.example .env`
+- **Method 2**: Create manually: `nano .env` (or your preferred editor)
+- The `.env` file is gitignored and will not be committed
+- Docker Compose automatically loads variables from `.env` in the project root
 
-**Note**: The `.env` file is gitignored and will not be committed. Use `.env.example` as a template.
+**Note**: The example values in `.env.example` are the same as the defaults, so creating a `.env` file is optional unless you want to customize settings. However, **you should always set a custom `SECRET_KEY` for production use**.
 
 ## API Endpoints
 
@@ -317,6 +435,43 @@ npm run dev
 The frontend will run on `http://localhost:3000` and proxy API requests to the backend.
 
 ## Troubleshooting
+
+### .env File Location Issues
+
+**Problem**: Environment variables not being read, or services using default values.
+
+**Solution**:
+1. **Verify `.env` file location**:
+   ```bash
+   # From project root, check if .env exists
+   ls -la .env
+   
+   # Should show: -rw-r--r-- 1 user user ... .env
+   # If not found, create it:
+   cp .env.example .env
+   ```
+
+2. **Verify you're in the project root**:
+   ```bash
+   # Should show docker-compose.yml
+   ls docker-compose.yml
+   
+   # If not, navigate to project root:
+   cd /path/to/nvidia-spark-monitoring
+   ```
+
+3. **Check if Docker Compose is reading the file**:
+   ```bash
+   # Test by setting a variable and checking
+   echo "TEST_VAR=test123" >> .env
+   sudo docker compose config | grep TEST_VAR
+   # Should show the variable
+   ```
+
+4. **Common mistakes**:
+   - ❌ `.env` file in `backend/` directory (wrong location)
+   - ❌ `.env` file named `.env.example` (needs to be `.env`)
+   - ❌ Missing quotes around JSON values: `CORS_ORIGINS=["*"]` (correct) vs `CORS_ORIGINS=[*]` (wrong)
 
 ### Services Not Starting
 
