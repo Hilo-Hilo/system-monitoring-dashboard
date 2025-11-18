@@ -5,6 +5,8 @@ import json
 import time
 import os
 import logging
+import subprocess
+import re
 from typing import List, Optional, Dict
 from app.models.metrics import (
     CPUMetrics, MemoryMetrics, DiskMetrics, NetworkMetrics, GPUMetrics, SystemMetrics, SystemInfo
@@ -287,16 +289,103 @@ class SystemMonitor:
         boot_time = datetime.fromtimestamp(psutil.boot_time())
         uptime = (datetime.now() - boot_time).total_seconds()
         
+        # Determine Hostname
+        hostname = platform.node()
+        # Try to read from mounted host hostname file if available
+        if os.path.exists('/etc/host_hostname'):
+            try:
+                with open('/etc/host_hostname', 'r') as f:
+                    content = f.read().strip()
+                    if content:
+                        hostname = content
+            except Exception as e:
+                logger.warning(f"Failed to read /etc/host_hostname: {e}")
+
+        # Determine Processor Name
+        processor_name = platform.processor()
+        
+        # Strategy 1: Try lscpu (Works well on ARM/Grace)
+        try:
+            result = subprocess.run(['lscpu'], capture_output=True, text=True)
+            if result.returncode == 0:
+                for line in result.stdout.split('\n'):
+                    if line.startswith('Model name:'):
+                        processor_name = line.split(':', 1)[1].strip()
+                        break
+        except Exception as e:
+            logger.debug(f"lscpu failed: {e}")
+            
+            # Strategy 2: Try /proc/cpuinfo fallback (Standard Linux x86)
+            if processor_name == "unknown" or not processor_name:
+                if platform.system() == "Linux":
+                    try:
+                        with open("/proc/cpuinfo", "r") as f:
+                            for line in f:
+                                if "model name" in line:
+                                    processor_name = line.split(":")[1].strip()
+                                    break
+                    except Exception:
+                        pass
+        
         return SystemInfo(
-            hostname=platform.node(),
+            hostname=hostname,
             os=platform.system(),
             os_release=platform.release(),
             os_version=platform.version(),
             machine=platform.machine(),
-            processor=platform.processor(),
+            processor=processor_name,
+            cpu_count=psutil.cpu_count(logical=True),
+            cpu_cores=psutil.cpu_count(logical=False),
+            total_memory=psutil.virtual_memory().total,
             uptime=uptime,
             boot_time=boot_time
         )
+    
+    def reboot_system(self) -> bool:
+        """Reboot the system."""
+        try:
+            # Try systemd-based reboot first (common in modern Linux)
+            # This requires DBus access, which is often restricted in containers
+            # But direct 'reboot' command should work with SYS_BOOT cap
+            
+            logger.info("Attempting system reboot...")
+            
+            # Method 1: Standard reboot command
+            # In a privileged container with SYS_BOOT, this signals the kernel to reboot
+            # However, some container runtimes capture this and just stop the container
+            # We can try to use magic SysRq if enabled, or just standard tools
+            
+            # Try /sbin/reboot directly
+            if os.path.exists("/sbin/reboot"):
+                ret = subprocess.run(["/sbin/reboot"], capture_output=True)
+                if ret.returncode == 0:
+                    return True
+            
+            # Method 2: os.system fallback
+            ret = os.system("reboot")
+            if ret == 0:
+                return True
+                
+            # Method 3: sudo reboot (if sudo is installed/configured)
+            ret = os.system("sudo reboot")
+            if ret == 0:
+                return True
+                
+            # Method 4: Force immediate reboot via sysrq (dangerous but effective)
+            # echo b > /proc/sysrq-trigger
+            if os.path.exists("/proc/sysrq-trigger"):
+                try:
+                    with open("/proc/sysrq-trigger", "w") as f:
+                        f.write("b")
+                    return True
+                except Exception as e:
+                    logger.error(f"SysRq reboot failed: {e}")
+
+            logger.error("All reboot methods failed")
+            return False
+        except Exception as e:
+            logger.error(f"Failed to reboot system: {e}")
+            return False
     
     def get_all_metrics(self) -> SystemMetrics:
         """Get all system metrics."""

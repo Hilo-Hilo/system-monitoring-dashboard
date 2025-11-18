@@ -31,6 +31,12 @@ services:
       METRICS_COLLECTION_INTERVAL: ${METRICS_COLLECTION_INTERVAL:-2}
     volumes:
       - ./backend:/app
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/group:/etc/group:ro
+      - /etc/hostname:/etc/host_hostname:ro
+    privileged: true
+    cap_add:
+      - SYS_BOOT
     ports:
       - "8000:8000"
     depends_on:

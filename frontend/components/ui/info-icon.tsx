@@ -28,7 +28,7 @@ export function InfoIcon({ content, className = '' }: InfoIconProps) {
         <Info className={`${iconSizeClass} ${className} text-muted-foreground hover:text-foreground transition-colors cursor-help`} />
       </button>
       {showTooltip && (
-        <div className="absolute z-50 left-1/2 transform -translate-x-1/2 bottom-full mb-2 w-72 p-3 text-xs text-popover-foreground bg-popover border border-border rounded-md shadow-lg">
+        <div className="absolute z-50 left-1/2 transform -translate-x-1/2 bottom-full mb-2 w-72 p-3 text-xs text-popover-foreground bg-popover border border-border rounded-md shadow-lg pointer-events-none">
           <p className="leading-relaxed">{content}</p>
           <div className="absolute left-1/2 transform -translate-x-1/2 top-full w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-popover"></div>
         </div>

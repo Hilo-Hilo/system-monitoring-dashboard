@@ -86,6 +86,9 @@ export interface SystemInfo {
   os_version: string;
   machine: string;
   processor: string;
+  cpu_count: number;
+  cpu_cores: number;
+  total_memory: number;
   uptime: number;
   boot_time: string;
 }
@@ -105,6 +108,7 @@ export const api = {
   metrics: {
     getCurrent: () => apiClient.get<SystemMetrics>('/metrics/current'),
     getSystemInfo: () => apiClient.get<SystemInfo>('/metrics/system'),
+    restartSystem: () => apiClient.post('/metrics/system/restart'),
     getCPU: () => apiClient.get('/metrics/cpu'),
     getMemory: () => apiClient.get('/metrics/memory'),
     getDisk: () => apiClient.get('/metrics/disk'),

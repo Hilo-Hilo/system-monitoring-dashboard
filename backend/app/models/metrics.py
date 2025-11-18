@@ -102,6 +102,9 @@ class SystemInfo(BaseModel):
     os_version: str
     machine: str
     processor: str
+    cpu_count: int
+    cpu_cores: int
+    total_memory: int
     uptime: float
     boot_time: datetime
 

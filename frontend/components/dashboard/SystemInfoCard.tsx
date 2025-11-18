@@ -2,15 +2,31 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { api, SystemInfo } from '@/lib/api';
+import { auth } from '@/lib/auth';
 import { formatDistance } from 'date-fns';
+import { Power } from 'lucide-react';
 
 export function SystemInfoCard() {
   const [info, setInfo] = useState<SystemInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showRestartDialog, setShowRestartDialog] = useState(false);
+  const [restarting, setRestarting] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
+    setIsAuthenticated(auth.isAuthenticated());
+    
     const fetchInfo = async () => {
       try {
         const response = await api.metrics.getSystemInfo();
@@ -26,6 +42,19 @@ export function SystemInfoCard() {
 
     fetchInfo();
   }, []);
+
+  const handleRestart = async () => {
+    setRestarting(true);
+    try {
+      await api.metrics.restartSystem();
+      alert('System restart initiated. The dashboard will become unavailable shortly.');
+      setShowRestartDialog(false);
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Failed to initiate restart');
+    } finally {
+      setRestarting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -50,33 +79,78 @@ export function SystemInfoCard() {
 
   // Format uptime
   const uptimeDuration = formatDistance(0, info.uptime * 1000, { includeSeconds: true });
+  
+  // Format memory
+  const totalMemoryGB = (info.total_memory / 1024 / 1024 / 1024).toFixed(2);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>System Information</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-          <div>
-            <span className="text-muted-foreground block">Hostname</span>
-            <span className="font-medium">{info.hostname}</span>
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle>System Information</CardTitle>
+          {isAuthenticated && (
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              className="h-8 gap-2"
+              onClick={() => setShowRestartDialog(true)}
+            >
+              <Power className="h-4 w-4" />
+              Restart System
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 text-sm mt-2">
+            <div>
+              <span className="text-muted-foreground block text-xs uppercase tracking-wider">Hostname</span>
+              <span className="font-medium truncate block" title={info.hostname}>{info.hostname}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground block text-xs uppercase tracking-wider">OS</span>
+              <span className="font-medium block truncate" title={`${info.os} ${info.os_release}`}>
+                {info.os} {info.os_release}
+              </span>
+            </div>
+            <div className="lg:col-span-2">
+              <span className="text-muted-foreground block text-xs uppercase tracking-wider">Processor</span>
+              <span className="font-medium truncate block" title={info.processor}>
+                {info.processor || 'Unknown'}
+                <span className="text-muted-foreground ml-1 font-normal">
+                  ({info.cpu_cores} cores / {info.cpu_count} threads)
+                </span>
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground block text-xs uppercase tracking-wider">Uptime</span>
+              <span className="font-medium">{uptimeDuration}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground block text-xs uppercase tracking-wider">Memory</span>
+              <span className="font-medium">{totalMemoryGB} GB</span>
+            </div>
           </div>
-          <div>
-            <span className="text-muted-foreground block">OS</span>
-            <span className="font-medium">{info.os} {info.os_release}</span>
-          </div>
-          <div>
-            <span className="text-muted-foreground block">Processor</span>
-            <span className="font-medium truncate block" title={info.processor}>{info.processor}</span>
-          </div>
-          <div>
-            <span className="text-muted-foreground block">Uptime</span>
-            <span className="font-medium">{uptimeDuration}</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <Dialog open={showRestartDialog} onOpenChange={setShowRestartDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Restart System</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to restart the system? This will reboot the host machine and the monitoring service will be unavailable until it boots back up.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRestartDialog(false)} disabled={restarting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleRestart} disabled={restarting}>
+              {restarting ? 'Restarting...' : 'Restart'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
-

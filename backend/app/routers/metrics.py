@@ -1,9 +1,20 @@
 """Real-time metrics endpoints (public)."""
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 from app.services.system_monitor import system_monitor
 from app.models.metrics import SystemMetrics, SystemInfo
+from app.models.database import User
+from app.auth import get_current_active_user
 
 router = APIRouter()
+
+
+@router.post("/system/restart")
+def restart_system(current_user: User = Depends(get_current_active_user)):
+    """Restart the system (requires authentication)."""
+    success = system_monitor.reboot_system()
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to initiate system restart")
+    return {"message": "System restart initiated"}
 
 
 @router.get("/system", response_model=SystemInfo)
