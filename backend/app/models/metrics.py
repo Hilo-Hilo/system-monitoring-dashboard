@@ -46,11 +46,11 @@ class GPUMetrics(BaseModel):
     """GPU metrics model."""
     index: int
     name: str
-    temperature: float
-    utilization: float
-    memory_used: float
-    memory_total: float
-    memory_percent: float
+    temperature: Optional[float] = None
+    utilization: Optional[float] = None
+    memory_used: Optional[float] = None
+    memory_total: Optional[float] = None
+    memory_percent: Optional[float] = None
     power_draw: Optional[float] = None
 
 

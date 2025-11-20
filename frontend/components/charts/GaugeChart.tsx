@@ -3,7 +3,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 
 interface GaugeChartProps {
-  value: number;
+  value: number | null | undefined;
   max?: number;
   label?: string;
   unit?: string;
@@ -11,7 +11,8 @@ interface GaugeChartProps {
 }
 
 export function GaugeChart({ value, max = 100, label, unit = '%', color }: GaugeChartProps) {
-  const percentage = Math.min((value / max) * 100, 100);
+  const safeValue = value ?? 0;
+  const percentage = Math.min((safeValue / max) * 100, 100);
   const gaugeColor = color || (percentage > 80 ? '#ef4444' : percentage > 60 ? '#f59e0b' : '#10b981');
   
   return (
@@ -46,7 +47,7 @@ export function GaugeChart({ value, max = 100, label, unit = '%', color }: Gauge
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
                 <div className="text-2xl font-bold" style={{ color: gaugeColor }}>
-                  {value.toFixed(1)}
+                  {safeValue.toFixed(1)}
                 </div>
                 <div className="text-xs text-muted-foreground">{unit}</div>
               </div>

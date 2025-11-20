@@ -93,11 +93,35 @@ The dashboard provides real-time monitoring with an intuitive interface:
    - Install the plugin: `sudo apt install docker-compose-plugin` (recommended)
    - Or use `docker-compose` (with hyphen) instead of `docker compose` (with space) in all commands
 3. **Network Access**: Ports 80, 3000, 8000, and 5432 should be available
-4. **NVIDIA GPU Drivers** (optional, for GPU metrics):
+4. **NVIDIA GPU Support** (optional, for GPU metrics):
+   
+   a. **Install NVIDIA GPU Drivers**:
    ```bash
    # Verify drivers are installed
    nvidia-smi
    ```
+   
+   b. **Install NVIDIA Container Toolkit** (required for Docker GPU access):
+   ```bash
+   # Add NVIDIA package repository
+   distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+   curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+   curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
+     sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+     sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+   
+   # Install the toolkit
+   sudo apt-get update
+   sudo apt-get install -y nvidia-container-toolkit
+   
+   # Restart Docker to apply changes
+   sudo systemctl restart docker
+   
+   # Verify GPU access in Docker
+   sudo docker run --rm --gpus all nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
+   ```
+   
+   **Note**: Without the NVIDIA Container Toolkit, Docker containers cannot access GPUs even if drivers are installed on the host.
 
 **Note**: This dashboard can be accessed via:
 - Local network (http://localhost or http://[server-ip])
@@ -295,11 +319,13 @@ To ensure the monitoring dashboard automatically starts after system reboots:
 The `docker-compose.yml` file configures:
 
 - **PostgreSQL Database** (port 5432): Stores user accounts and historical metrics
-- **FastAPI Backend** (port 8000): API server with host process access (`pid: "host"`)
+- **FastAPI Backend** (port 8000): API server with host process access (`pid: "host"`) and NVIDIA GPU access
 - **Next.js Frontend** (port 3000): React-based dashboard
 - **Nginx Reverse Proxy** (port 80): Routes requests and serves frontend
 
 All services are configured with `restart: unless-stopped` for 24/7 availability.
+
+**GPU Configuration**: The backend container is configured with NVIDIA GPU access using the `deploy.resources.reservations.devices` section. This enables GPU metrics collection for systems with NVIDIA GPUs. On systems without GPUs, the dashboard will simply not display GPU metrics.
 
 ### Environment Variables
 
@@ -545,22 +571,47 @@ The backend container uses `pid: "host"` to access host processes. If you only s
 
 ### GPU Metrics Not Showing
 
-1. **Verify NVIDIA drivers**:
+GPU metrics require both NVIDIA drivers on the host and proper GPU access configuration in Docker.
+
+1. **Verify NVIDIA drivers are installed on the host**:
    ```bash
    nvidia-smi
    ```
+   If this command fails, install NVIDIA drivers first.
 
-2. **Test pynvml access**:
+2. **Verify docker-compose.yml has GPU configuration**:
+   The backend service should include:
+   ```yaml
+   deploy:
+     resources:
+       reservations:
+         devices:
+           - driver: nvidia
+             count: all
+             capabilities: [gpu]
+   ```
+
+3. **Restart backend container after adding GPU config**:
+   ```bash
+   sudo docker compose up -d backend
+   ```
+
+4. **Test pynvml access inside container**:
    ```bash
    sudo docker exec monitoring_backend python -c "import pynvml; pynvml.nvmlInit(); print('GPU access OK')"
    ```
+   If this fails with "NVML Shared Library Not Found", the container doesn't have GPU access.
 
-3. **Check if GPUs are available**:
+5. **Check if GPUs are available via API**:
    ```bash
    curl http://localhost:8000/api/v1/metrics/gpu
    ```
+   Should return GPU data instead of an empty array `[]`.
 
-**Note**: GPU metrics require NVIDIA drivers and may not be available in all environments.
+**Common Issues:**
+- **Missing GPU configuration in docker-compose.yml**: The `deploy.resources.reservations.devices` section is required for Docker containers to access GPUs
+- **NVIDIA Container Toolkit not installed**: Install with `sudo apt-get install -y nvidia-container-toolkit && sudo systemctl restart docker`
+- **Docker Compose version too old**: GPU support requires Docker Compose V2 (plugin version). Update if using standalone docker-compose.
 
 ### Authentication Issues
 

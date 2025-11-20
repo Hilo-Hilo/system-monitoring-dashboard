@@ -183,11 +183,21 @@ export function Dashboard() {
                 {metrics.gpus.map((gpu, index) => (
                   <div key={index} className="space-y-2 p-3 border rounded-lg">
                     <p className="font-medium">{gpu.name}</p>
-                    <p className="text-sm text-muted-foreground">Utilization: {gpu.utilization}%</p>
-                    <p className="text-sm text-muted-foreground">Temperature: {gpu.temperature}°C</p>
-                    <p className="text-sm text-muted-foreground">
-                      Memory: {gpu.memory_percent.toFixed(1)}% ({gpu.memory_used} MB / {gpu.memory_total} MB)
-                    </p>
+                    {gpu.utilization !== null && gpu.utilization !== undefined && (
+                      <p className="text-sm text-muted-foreground">Utilization: {gpu.utilization}%</p>
+                    )}
+                    {gpu.temperature !== null && gpu.temperature !== undefined && (
+                      <p className="text-sm text-muted-foreground">Temperature: {gpu.temperature}°C</p>
+                    )}
+                    {gpu.memory_percent !== null && gpu.memory_percent !== undefined && 
+                     gpu.memory_used !== null && gpu.memory_total !== null && (
+                      <p className="text-sm text-muted-foreground">
+                        Memory: {gpu.memory_percent.toFixed(1)}% ({(gpu.memory_used / 1024 / 1024).toFixed(0)} MB / {(gpu.memory_total / 1024 / 1024).toFixed(0)} MB)
+                      </p>
+                    )}
+                    {gpu.power_draw !== null && gpu.power_draw !== undefined && (
+                      <p className="text-sm text-muted-foreground">Power: {gpu.power_draw.toFixed(1)}W</p>
+                    )}
                   </div>
                 ))}
               </div>

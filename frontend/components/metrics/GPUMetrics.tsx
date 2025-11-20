@@ -28,9 +28,9 @@ export function GPUMetrics({ metrics }: GPUMetricsProps) {
     if (metrics && metrics.gpus.length > 0) {
       const gpuData: { timestamp: string; [key: string]: any } = { timestamp: metrics.timestamp };
       metrics.gpus.forEach((gpu) => {
-        gpuData[`gpu${gpu.index}_utilization`] = gpu.utilization;
-        gpuData[`gpu${gpu.index}_memory`] = gpu.memory_percent;
-        gpuData[`gpu${gpu.index}_temp`] = gpu.temperature;
+        if (gpu.utilization !== null && gpu.utilization !== undefined) gpuData[`gpu${gpu.index}_utilization`] = gpu.utilization;
+        if (gpu.memory_percent !== null && gpu.memory_percent !== undefined) gpuData[`gpu${gpu.index}_memory`] = gpu.memory_percent;
+        if (gpu.temperature !== null && gpu.temperature !== undefined) gpuData[`gpu${gpu.index}_temp`] = gpu.temperature;
       });
       
       setHistory((prev) => {
@@ -57,37 +57,63 @@ export function GPUMetrics({ metrics }: GPUMetricsProps) {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <GaugeChart
-                value={gpu.utilization}
-                max={100}
-                label="GPU Utilization"
-                unit="%"
-                color="#8b5cf6"
-              />
-              <GaugeChart
-                value={gpu.memory_percent}
-                max={100}
-                label="Memory Usage"
-                unit="%"
-                color="#ec4899"
-              />
+              {gpu.utilization !== null && gpu.utilization !== undefined ? (
+                <GaugeChart
+                  value={gpu.utilization}
+                  max={100}
+                  label="GPU Utilization"
+                  unit="%"
+                  color="#8b5cf6"
+                />
+              ) : (
+                <div className="text-center text-muted-foreground p-4">
+                  Utilization: N/A
+                </div>
+              )}
+              {gpu.memory_percent !== null && gpu.memory_percent !== undefined ? (
+                <GaugeChart
+                  value={gpu.memory_percent}
+                  max={100}
+                  label="Memory Usage"
+                  unit="%"
+                  color="#ec4899"
+                />
+              ) : (
+                <div className="text-center text-muted-foreground p-4">
+                  Memory: N/A
+                </div>
+              )}
               <div className="space-y-2">
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Temperature: </span>
-                  <span className="font-medium">{gpu.temperature}°C</span>
-                </div>
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Memory Used: </span>
-                  <span className="font-medium">{formatBytes(gpu.memory_used)}</span>
-                </div>
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Memory Total: </span>
-                  <span className="font-medium">{formatBytes(gpu.memory_total)}</span>
-                </div>
-                {gpu.power_draw && (
+                {gpu.temperature !== null && gpu.temperature !== undefined && (
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Temperature: </span>
+                    <span className="font-medium">{gpu.temperature}°C</span>
+                  </div>
+                )}
+                {gpu.memory_used !== null && gpu.memory_used !== undefined && 
+                 gpu.memory_total !== null && gpu.memory_total !== undefined && (
+                  <>
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Memory Used: </span>
+                      <span className="font-medium">{formatBytes(gpu.memory_used)}</span>
+                    </div>
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Memory Total: </span>
+                      <span className="font-medium">{formatBytes(gpu.memory_total)}</span>
+                    </div>
+                  </>
+                )}
+                {gpu.power_draw !== null && gpu.power_draw !== undefined && (
                   <div className="text-sm">
                     <span className="text-muted-foreground">Power Draw: </span>
                     <span className="font-medium">{gpu.power_draw.toFixed(1)} W</span>
+                  </div>
+                )}
+                {(!gpu.temperature || gpu.temperature === null) && 
+                 (!gpu.memory_used || gpu.memory_used === null) && 
+                 (!gpu.power_draw || gpu.power_draw === null) && (
+                  <div className="text-sm text-muted-foreground">
+                    Limited metrics available for this GPU
                   </div>
                 )}
               </div>
@@ -100,10 +126,10 @@ export function GPUMetrics({ metrics }: GPUMetricsProps) {
                   dataKey={`gpu${gpu.index}_utilization`}
                   xAxisKey="timestamp"
                   lines={[
-                    { key: `gpu${gpu.index}_utilization`, name: 'Utilization (%)', color: '#8b5cf6' },
-                    { key: `gpu${gpu.index}_memory`, name: 'Memory (%)', color: '#ec4899' },
-                    { key: `gpu${gpu.index}_temp`, name: 'Temperature (°C)', color: '#f59e0b' }
-                  ]}
+                    (gpu.utilization !== null && gpu.utilization !== undefined) && { key: `gpu${gpu.index}_utilization`, name: 'Utilization (%)', color: '#8b5cf6' },
+                    (gpu.memory_percent !== null && gpu.memory_percent !== undefined) && { key: `gpu${gpu.index}_memory`, name: 'Memory (%)', color: '#ec4899' },
+                    (gpu.temperature !== null && gpu.temperature !== undefined) && { key: `gpu${gpu.index}_temp`, name: 'Temperature (°C)', color: '#f59e0b' }
+                  ].filter(Boolean) as Array<{ key: string; name: string; color: string }>}
                   height={200}
                 />
               </div>

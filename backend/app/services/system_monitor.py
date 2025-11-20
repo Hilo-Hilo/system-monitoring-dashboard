@@ -260,29 +260,58 @@ class SystemMonitor:
         try:
             device_count = pynvml.nvmlDeviceGetCount()
             for i in range(device_count):
-                handle = pynvml.nvmlDeviceGetHandleByIndex(i)
-                name = pynvml.nvmlDeviceGetName(handle).decode('utf-8')
-                temp = pynvml.nvmlDeviceGetTemperature(handle, pynvml.NVML_TEMPERATURE_GPU)
-                util = pynvml.nvmlDeviceGetUtilizationRates(handle)
-                mem_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
-                
                 try:
-                    power = pynvml.nvmlDeviceGetPowerUsage(handle) / 1000.0  # Convert to watts
-                except:
-                    power = None
-                
-                gpus.append(GPUMetrics(
-                    index=i,
-                    name=name,
-                    temperature=temp,
-                    utilization=util.gpu,
-                    memory_used=mem_info.used,
-                    memory_total=mem_info.total,
-                    memory_percent=(mem_info.used / mem_info.total) * 100,
-                    power_draw=power
-                ))
+                    handle = pynvml.nvmlDeviceGetHandleByIndex(i)
+                    
+                    # Get GPU name (handle both string and bytes return types)
+                    name_raw = pynvml.nvmlDeviceGetName(handle)
+                    name = name_raw.decode('utf-8') if isinstance(name_raw, bytes) else name_raw
+                    
+                    # Get temperature (some GPUs may not support this)
+                    try:
+                        temp = pynvml.nvmlDeviceGetTemperature(handle, pynvml.NVML_TEMPERATURE_GPU)
+                    except:
+                        temp = None
+                    
+                    # Get utilization (some GPUs may not support this)
+                    try:
+                        util = pynvml.nvmlDeviceGetUtilizationRates(handle)
+                        utilization = util.gpu
+                    except:
+                        utilization = None
+                    
+                    # Get memory info (some GPUs may not support this - e.g., display GPUs)
+                    try:
+                        mem_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+                        memory_used = mem_info.used
+                        memory_total = mem_info.total
+                        memory_percent = (mem_info.used / mem_info.total) * 100
+                    except:
+                        memory_used = None
+                        memory_total = None
+                        memory_percent = None
+                    
+                    # Get power usage (some GPUs may not support this)
+                    try:
+                        power = pynvml.nvmlDeviceGetPowerUsage(handle) / 1000.0  # Convert to watts
+                    except:
+                        power = None
+                    
+                    gpus.append(GPUMetrics(
+                        index=i,
+                        name=name,
+                        temperature=temp,
+                        utilization=utilization,
+                        memory_used=memory_used,
+                        memory_total=memory_total,
+                        memory_percent=memory_percent,
+                        power_draw=power
+                    ))
+                except Exception as e:
+                    logger.warning(f"Error getting metrics for GPU {i}: {e}")
+                    continue
         except Exception as e:
-            logger.error(f"Error getting GPU metrics: {e}")
+            logger.error(f"Error enumerating GPUs: {e}")
         
         return gpus
     
